@@ -123,9 +123,51 @@ tbody td{padding:14px 20px;font-size:14px;color:var(--navy);vertical-align:top}
 .empty .ei{font-size:40px;margin-bottom:12px}
 .empty p{font-size:14px}
 
+/* ---------- Carros de notebooks ---------- */
+.carro-heading{font-family:'Playfair Display',serif;font-size:17px;color:var(--navy);margin:28px 0 12px;display:flex;align-items:center;gap:8px}
+.carro-heading:first-child{margin-top:0}
+
+.carro-box{background:var(--white);border:1px solid #e2e6eb;border-radius:2px;margin-bottom:12px;overflow:hidden}
+.carro-box summary{list-style:none;cursor:pointer;padding:16px 20px;display:flex;align-items:center;justify-content:space-between;font-family:'Playfair Display',serif;font-size:16px;color:var(--navy);transition:background .2s}
+.carro-box summary::-webkit-details-marker{display:none}
+.carro-box summary:hover{background:var(--light)}
+.carro-box summary::after{content:'+';font-family:'Source Sans 3',sans-serif;font-size:20px;color:var(--gold);transition:transform .2s}
+.carro-box[open] summary::after{transform:rotate(45deg)}
+.carro-box .carro-count{font-family:'Source Sans 3',sans-serif;font-size:11px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--gray);margin-left:10px}
+.carro-box[open] summary{border-bottom:1px solid #eef0f3}
+.carro-box .esel{padding:16px 20px}
+
 @media(max-width:768px){
   header{padding:0 16px;flex-wrap:wrap;height:auto;gap:8px;padding-block:12px}
+  nav{flex-wrap:wrap;gap:2px}
   nav button{font-size:10px;padding:6px 10px}
+  .hr{width:100%;justify-content:space-between}
   main{padding:20px 16px}
   .stats{grid-template-columns:repeat(2,1fr)}
+  .egrid{grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px}
+  .esel{grid-template-columns:1fr}
+  .fcard{padding:22px 18px}
+  .login-card{width:100%}
+  table{min-width:460px}
+  .carro-box summary{padding:13px 16px;font-size:14px}
+  .carro-box .esel{padding:12px}
+}
+
+@media(max-width:480px){
+  .login-card{border-radius:0}
+  .lh{padding:28px 22px 22px}
+  .lb{padding:24px 22px}
+  header{padding:0 12px}
+  .logo{font-size:17px}
+  .stats{grid-template-columns:repeat(2,1fr);gap:10px}
+  .sc{padding:16px}
+  .sc .num{font-size:28px}
+  main{padding:16px 12px}
+  .stitle{font-size:21px}
+  .egrid{grid-template-columns:repeat(2,1fr)}
+  .ecard{padding:14px}
+  .fcard{padding:18px 14px}
+  table{font-size:12px}
+  thead th,tbody td{padding:10px 12px}
+  #toast{left:16px;right:16px;bottom:16px;max-width:none}
 }
