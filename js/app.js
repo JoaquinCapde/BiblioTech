@@ -200,11 +200,11 @@ const PANELS = {
         <div class="fr"><label>Observaciones (opcional)</label><textarea id="fob" placeholder="Alguna aclaración..."></textarea></div>
         <button class="bsub" id="btn-pedido" ${disp.length === 0 ? 'disabled' : ''}>Enviar solicitud</button>
       </div>`;
-    const fe = document.getElementById('ff');
+    const fe = el.querySelector('#ff');
     const now = new Date();
     now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
     fe.value = now.toISOString().slice(0, 16);
-    document.getElementById('btn-pedido').onclick = enviarPedido;
+    el.querySelector('#btn-pedido').onclick = enviarPedido;
   },
 
   async reportar(el) {
@@ -229,7 +229,7 @@ const PANELS = {
         <div class="fr"><label>Descripción</label><textarea id="rdesc" placeholder="Describí el fallo con detalle..."></textarea></div>
         <button class="bsub" id="btn-reporte">Enviar reporte</button>
       </div>`;
-    document.getElementById('btn-reporte').onclick = enviarReporte;
+    el.querySelector('#btn-reporte').onclick = enviarReporte;
   },
 
   async historial(el) {
@@ -314,7 +314,7 @@ const PANELS = {
           <button class="bsub" id="btn-nuevo-equipo">Agregar equipo</button>
         </div>
       </div>`;
-    document.getElementById('btn-nuevo-equipo').onclick = agregarEquipo;
+    el.querySelector('#btn-nuevo-equipo').onclick = agregarEquipo;
   }
 };
 
