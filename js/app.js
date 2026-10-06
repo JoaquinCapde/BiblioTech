@@ -131,6 +131,20 @@ function escapeHtml(s) {
   return String(s ?? '').replace(/[&<>"']/g, c => ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[c]));
 }
 
+// Agrupa los equipos: notebooks por carro (ordenadas por número), tableros aparte.
+function agruparPorCarro(equipos) {
+  const notebooks = equipos.filter(e => e.tipo === 'notebook');
+  const tableros = equipos.filter(e => e.tipo === 'tablero');
+  const carros = {};
+  notebooks.forEach(e => {
+    const c = e.carro ?? 0;
+    (carros[c] ??= []).push(e);
+  });
+  Object.values(carros).forEach(arr => arr.sort((a, b) => (a.numero ?? 0) - (b.numero ?? 0)));
+  const carroKeys = Object.keys(carros).map(Number).sort((a, b) => a - b);
+  return { carroKeys, carros, tableros };
+}
+
 // ---------- Router de paneles ----------
 
 async function showPanel(id) {
@@ -153,6 +167,16 @@ const PANELS = {
   async disponibilidad(el) {
     const equipos = await Api.getEquipos();
     const s = stats(equipos);
+    const { carroKeys, carros, tableros } = agruparPorCarro(equipos);
+
+    const cardHtml = e => `
+      <div class="ecard">
+        <div class="eico">${ico(e.tipo)}</div>
+        <div class="ename">${e.tipo === 'notebook' ? 'Notebook ' + String(e.numero).padStart(2, '0') : escapeHtml(e.nombre)}</div>
+        <div class="eid">${escapeHtml(e.id)}</div>
+        ${beq(e.estado)}
+      </div>`;
+
     el.innerHTML = `
       <div class="stitle">Disponibilidad de Equipos</div>
       <div class="ssub">Estado actual de todos los equipos en tiempo real.</div>
@@ -162,43 +186,54 @@ const PANELS = {
         <div class="sc"><div class="num">${s.ocup}</div><div class="lbl">En uso</div></div>
         <div class="sc"><div class="num">${s.fall}</div><div class="lbl">Con fallo</div></div>
       </div>
-      <div class="egrid">
-        ${equipos.map(e => `
-          <div class="ecard">
-            <div class="eico">${ico(e.tipo)}</div>
-            <div class="ename">${escapeHtml(e.nombre)}</div>
-            <div class="eid">${escapeHtml(e.id)} · ${e.tipo}</div>
-            ${beq(e.estado)}
-          </div>`).join('')}
-      </div>`;
+      ${carroKeys.map(c => `
+        <div class="carro-heading">💻 Carro ${c}</div>
+        <div class="egrid">${carros[c].map(cardHtml).join('')}</div>`).join('')}
+      ${tableros.length ? `
+        <div class="carro-heading">📋 Tableros</div>
+        <div class="egrid">${tableros.map(cardHtml).join('')}</div>` : ''}`;
   },
 
   async pedir(el) {
     const equipos = await Api.getEquipos();
     const disp = equipos.filter(e => e.estado === 'disponible');
+    const { carroKeys, carros, tableros } = agruparPorCarro(disp);
+
+    const checkboxHtml = (e, label) => `
+      <label class="eci" id="lbl-${e.id}">
+        <input type="checkbox" value="${e.id}" onchange="togEci('${e.id}')"/>
+        <span style="font-size:18px">${ico(e.tipo)}</span>
+        <span><div class="ein">${escapeHtml(label)}</div><div class="eii">${escapeHtml(e.id)}</div></span>
+      </label>`;
+
+    const huboEquipos = carroKeys.length > 0 || tableros.length > 0;
+
     el.innerHTML = `
       <div class="stitle">Hacer un Pedido</div>
       <div class="ssub">Seleccioná uno o más equipos disponibles. El bibliotecario recibirá la solicitud.</div>
       <div class="fcard" style="max-width:720px">
         <h3>Solicitud de equipos</h3>
-        <div class="fr"><label>Tu nombre</label><input id="fn" type="text" placeholder="Nombre completo del docente"/></div>
         <div class="fr"><label>Aula</label><input id="fa" type="text" placeholder="Ej: Aula 3B, Laboratorio..."/></div>
         <div class="fr">
           <label>Equipos disponibles — seleccioná los que necesitás</label>
-          ${disp.length === 0
+          ${!huboEquipos
             ? `<div style="padding:14px;background:var(--light);border-radius:2px;color:var(--gray);font-size:13px;">⚠️ No hay equipos disponibles ahora mismo.</div>`
-            : `<div class="esel" id="esel">
-              ${disp.map(e => `
-                <label class="eci" id="lbl-${e.id}">
-                  <input type="checkbox" value="${e.id}" onchange="togEci('${e.id}')"/>
-                  <span style="font-size:18px">${ico(e.tipo)}</span>
-                  <span><div class="ein">${escapeHtml(e.nombre)}</div><div class="eii">${escapeHtml(e.id)}</div></span>
-                </label>`).join('')}
+            : `<div id="esel">
+              ${carroKeys.map(c => `
+                <details class="carro-box">
+                  <summary>💻 Carro ${c} <span class="carro-count">${carros[c].length} disponible${carros[c].length === 1 ? '' : 's'}</span></summary>
+                  <div class="esel">
+                    ${carros[c].map(e => checkboxHtml(e, 'Notebook ' + String(e.numero).padStart(2, '0'))).join('')}
+                  </div>
+                </details>`).join('')}
+              ${tableros.length ? `
+                <div class="carro-heading" style="margin-top:${carroKeys.length ? '18px' : '0'}">📋 Tableros disponibles</div>
+                <div class="esel">${tableros.map(e => checkboxHtml(e, e.nombre)).join('')}</div>` : ''}
             </div>`}
         </div>
         <div class="fr"><label>Fecha y hora</label><input id="ff" type="datetime-local"/></div>
         <div class="fr"><label>Observaciones (opcional)</label><textarea id="fob" placeholder="Alguna aclaración..."></textarea></div>
-        <button class="bsub" id="btn-pedido" ${disp.length === 0 ? 'disabled' : ''}>Enviar solicitud</button>
+        <button class="bsub" id="btn-pedido" ${!huboEquipos ? 'disabled' : ''}>Enviar solicitud</button>
       </div>`;
     const fe = el.querySelector('#ff');
     const now = new Date();
@@ -209,17 +244,21 @@ const PANELS = {
 
   async reportar(el) {
     const equipos = await Api.getEquipos();
+    const { carroKeys, carros, tableros } = agruparPorCarro(equipos);
+    const optNotebook = e => `<option value="${e.id}" data-tipo="notebook">Notebook ${String(e.numero).padStart(2, '0')} (${e.id})</option>`;
+    const optTablero = e => `<option value="${e.id}" data-tipo="tablero">${escapeHtml(e.nombre)}</option>`;
+
     el.innerHTML = `
       <div class="stitle">Reportar Fallo</div>
       <div class="ssub">Informá un problema técnico. El bibliotecario revisará y cambiará el estado del equipo.</div>
       <div class="fcard">
         <h3>Formulario de reporte</h3>
-        <div class="fr"><label>Tu nombre</label><input id="rn" type="text" placeholder="Nombre del docente"/></div>
         <div class="fr">
           <label>Equipo con fallo</label>
           <select id="req" onchange="actualizarFallos()">
             <option value="">— Seleccioná el equipo —</option>
-            ${equipos.map(e => `<option value="${e.id}" data-tipo="${e.tipo}">${escapeHtml(e.nombre)} (${e.tipo})</option>`).join('')}
+            ${carroKeys.map(c => `<optgroup label="Carro ${c}">${carros[c].map(optNotebook).join('')}</optgroup>`).join('')}
+            ${tableros.length ? `<optgroup label="Tableros">${tableros.map(optTablero).join('')}</optgroup>` : ''}
           </select>
         </div>
         <div class="fr">
@@ -278,6 +317,21 @@ const PANELS = {
   async equipos(el) {
     const equipos = await Api.getEquipos();
     const s = stats(equipos);
+    const { carroKeys, carros, tableros } = agruparPorCarro(equipos);
+
+    const cardHtml = e => `
+      <div class="ecard">
+        <div class="eico">${ico(e.tipo)}</div>
+        <div class="ename">${e.tipo === 'notebook' ? 'Notebook ' + String(e.numero).padStart(2, '0') : escapeHtml(e.nombre)}</div>
+        <div class="eid">${escapeHtml(e.id)}</div>
+        ${beq(e.estado)}
+        <div class="eact">
+          <button class="bsm ${e.estado === 'disponible' ? 'act' : ''}" onclick="cambiarEstado('${e.id}','disponible')">Disponible</button>
+          <button class="bsm ${e.estado === 'ocupado' ? 'act' : ''}"    onclick="cambiarEstado('${e.id}','ocupado')">En uso</button>
+          <button class="bsm ${e.estado === 'fallo' ? 'act' : ''}"      onclick="cambiarEstado('${e.id}','fallo')">Fallo</button>
+        </div>
+      </div>`;
+
     el.innerHTML = `
       <div class="stitle">Gestión de Equipos</div>
       <div class="ssub">Cambiá el estado de cada equipo y agregá nuevos.</div>
@@ -287,30 +341,32 @@ const PANELS = {
         <div class="sc"><div class="num">${s.ocup}</div><div class="lbl">En uso</div></div>
         <div class="sc"><div class="num">${s.fall}</div><div class="lbl">Con fallo</div></div>
       </div>
-      <div class="egrid">
-        ${equipos.map(e => `
-          <div class="ecard">
-            <div class="eico">${ico(e.tipo)}</div>
-            <div class="ename">${escapeHtml(e.nombre)}</div>
-            <div class="eid">${escapeHtml(e.id)} · ${e.tipo}</div>
-            ${beq(e.estado)}
-            <div class="eact">
-              <button class="bsm ${e.estado === 'disponible' ? 'act' : ''}" onclick="cambiarEstado('${e.id}','disponible')">Disponible</button>
-              <button class="bsm ${e.estado === 'ocupado' ? 'act' : ''}"    onclick="cambiarEstado('${e.id}','ocupado')">En uso</button>
-              <button class="bsm ${e.estado === 'fallo' ? 'act' : ''}"      onclick="cambiarEstado('${e.id}','fallo')">Fallo</button>
-            </div>
-          </div>`).join('')}
-      </div>
+      ${carroKeys.map(c => `
+        <div class="carro-heading">💻 Carro ${c}</div>
+        <div class="egrid">${carros[c].map(cardHtml).join('')}</div>`).join('')}
+      ${tableros.length ? `
+        <div class="carro-heading">📋 Tableros</div>
+        <div class="egrid">${tableros.map(cardHtml).join('')}</div>` : ''}
       <div style="margin-top:40px">
         <div class="stitle" style="font-size:20px;margin-bottom:4px">Agregar nuevo equipo</div>
-        <div class="ssub">Registrá una notebook o tablero.</div>
+        <div class="ssub">Registrá una notebook (se asigna a un carro) o un tablero.</div>
         <div class="fcard">
           <h3>Nuevo equipo</h3>
           <div class="fr"><label>Tipo</label>
-            <select id="net"><option value="">— Seleccioná —</option><option value="notebook">Notebook</option><option value="tablero">Tablero</option></select>
+            <select id="net" onchange="actualizarFormEquipo()">
+              <option value="">— Seleccioná —</option>
+              <option value="notebook">Notebook</option>
+              <option value="tablero">Tablero</option>
+            </select>
           </div>
-          <div class="fr"><label>Nombre</label><input id="nen" type="text" placeholder="Ej: Notebook 06"/></div>
-          <div class="fr"><label>ID / Código</label><input id="nei" type="text" placeholder="Ej: NB-06"/></div>
+          <div id="campos-notebook" style="display:none">
+            <div class="fr"><label>Carro</label><input id="ncar" type="number" min="1" placeholder="Ej: 1"/></div>
+            <div class="fr"><label>Número dentro del carro</label><input id="nnum" type="number" min="1" max="20" placeholder="Ej: 6"/></div>
+          </div>
+          <div id="campos-tablero" style="display:none">
+            <div class="fr"><label>Nombre</label><input id="nen" type="text" placeholder="Ej: Tablero 04"/></div>
+            <div class="fr"><label>ID / Código</label><input id="nei" type="text" placeholder="Ej: TB-04"/></div>
+          </div>
           <button class="bsub" id="btn-nuevo-equipo">Agregar equipo</button>
         </div>
       </div>`;
@@ -330,43 +386,45 @@ function actualizarFallos() {
   rtip.innerHTML = '<option value="">— Seleccioná el tipo —</option>' + lista.map(f => `<option>${f}</option>`).join('');
 }
 
+function actualizarFormEquipo() {
+  const tipo = document.getElementById('net').value;
+  document.getElementById('campos-notebook').style.display = tipo === 'notebook' ? 'block' : 'none';
+  document.getElementById('campos-tablero').style.display = tipo === 'tablero' ? 'block' : 'none';
+}
+
 function togEci(id) {
   const lbl = document.getElementById('lbl-' + id);
   if (lbl) lbl.classList.toggle('sel', lbl.querySelector('input').checked);
 }
 
 async function enviarPedido() {
-  const nombre = document.getElementById('fn').value.trim();
   const aula   = document.getElementById('fa').value.trim();
   const fecha  = document.getElementById('ff').value;
   const obs    = document.getElementById('fob').value.trim();
   const ids    = Array.from(document.querySelectorAll('#esel input:checked')).map(c => c.value);
 
-  if (!nombre) { toast('⚠️ Ingresá tu nombre.', true); return; }
   if (!aula)   { toast('⚠️ Ingresá el aula.', true); return; }
   if (!fecha)  { toast('⚠️ Seleccioná fecha y hora.', true); return; }
   if (!ids.length) { toast('⚠️ Seleccioná al menos un equipo.', true); return; }
 
   try {
-    await Api.crearPedido({ usuario: currentUser.username, nombre, aula, equiposIds: ids, fecha, obs });
+    await Api.crearPedido({ usuario: currentUser.username, nombre: currentUser.name, aula, equiposIds: ids, fecha, obs });
     toast('✅ Pedido enviado.');
     await showPanel('historial');
   } catch (e) { toast('❌ ' + e.message, true); }
 }
 
 async function enviarReporte() {
-  const nombre = document.getElementById('rn').value.trim();
   const eqId   = document.getElementById('req').value;
   const tipo   = document.getElementById('rtip').value;
   const desc   = document.getElementById('rdesc').value.trim();
 
-  if (!nombre) { toast('⚠️ Ingresá tu nombre.', true); return; }
   if (!eqId)   { toast('⚠️ Seleccioná un equipo.', true); return; }
   if (!tipo)   { toast('⚠️ Seleccioná el tipo de problema.', true); return; }
   if (!desc)   { toast('⚠️ Describí el problema.', true); return; }
 
   try {
-    await Api.crearReporte({ usuario: currentUser.username, nombre, equipoId: eqId, tipo, desc });
+    await Api.crearReporte({ usuario: currentUser.username, nombre: currentUser.name, equipoId: eqId, tipo, desc });
     toast('✅ Reporte enviado.');
     await showPanel('disponibilidad');
   } catch (e) { toast('❌ ' + e.message, true); }
@@ -382,14 +440,23 @@ async function cambiarEstado(id, nuevoEstado) {
 }
 
 async function agregarEquipo() {
-  const tipo   = document.getElementById('net').value;
-  const nombre = document.getElementById('nen').value.trim();
-  const id     = document.getElementById('nei').value.trim().toUpperCase();
-  if (!tipo || !nombre || !id) { toast('⚠️ Completá todos los campos.', true); return; }
+  const tipo = document.getElementById('net').value;
+  if (!tipo) { toast('⚠️ Seleccioná el tipo de equipo.', true); return; }
 
   try {
-    await Api.crearEquipo({ id, tipo, nombre });
-    toast('✅ "' + nombre + '" agregado.');
+    if (tipo === 'notebook') {
+      const carro = parseInt(document.getElementById('ncar').value, 10);
+      const numero = parseInt(document.getElementById('nnum').value, 10);
+      if (!carro || !numero) { toast('⚠️ Completá el carro y el número.', true); return; }
+      await Api.crearEquipo({ tipo, carro, numero });
+      toast(`✅ Notebook ${String(numero).padStart(2, '0')} agregada al Carro ${carro}.`);
+    } else {
+      const nombre = document.getElementById('nen').value.trim();
+      const id = document.getElementById('nei').value.trim().toUpperCase();
+      if (!nombre || !id) { toast('⚠️ Completá nombre e ID.', true); return; }
+      await Api.crearEquipo({ tipo, id, nombre });
+      toast('✅ "' + nombre + '" agregado.');
+    }
     await showPanel('equipos');
   } catch (e) { toast('❌ ' + e.message, true); }
 }
