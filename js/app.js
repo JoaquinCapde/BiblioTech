@@ -1,7 +1,7 @@
 // app.js
 // Estado de sesión en memoria + render de paneles.
-// Los datos (equipos, pedidos, reportes) YA NO viven acá: se piden
-// al backend (.NET) cada vez que se necesitan, a través de api.js.
+// Los datos (equipos, pedidos, reportes) viven en Supabase: se piden
+// cada vez que se necesitan, a través de api.js.
 
 let currentUser = null;
 
@@ -72,6 +72,16 @@ async function applyRole() {
   document.getElementById('ulbl').textContent = currentUser.name;
   buildNav();
   await showPanel(currentUser.role === 'docente' ? 'disponibilidad' : 'pedidos');
+
+  if (currentUser.role === 'docente') {
+    try {
+      const mios = await Api.getPedidosPorUsuario(currentUser.username);
+      const listos = mios.filter(p => p.estado === 'aceptado').length;
+      if (listos > 0) {
+        toast(`📦 Tenés ${listos} pedido${listos === 1 ? '' : 's'} listo${listos === 1 ? '' : 's'} para retirar en biblioteca.`);
+      }
+    } catch (_) { /* si falla el aviso, no interrumpe el login */ }
+  }
 }
 
 function buildNav() {
@@ -107,7 +117,7 @@ function beq(estado) {
 
 function bped(estado) {
   const c = { pendiente: 'bo2', aceptado: 'bac', rechazado: 'bre', entregado: 'ben' };
-  const l = { pendiente: 'En espera', aceptado: 'Aceptado', rechazado: 'Rechazado', entregado: 'Entregado' };
+  const l = { pendiente: 'En espera', aceptado: '📦 Listo para retirar', rechazado: 'Rechazado', entregado: 'Entregado' };
   return `<span class="bs ${c[estado] || 'bo2'}">${l[estado] || estado}</span>`;
 }
 
@@ -129,6 +139,19 @@ function stats(equipos) {
 
 function escapeHtml(s) {
   return String(s ?? '').replace(/[&<>"']/g, c => ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[c]));
+}
+
+// Cartel fijo para pedidos "listos para retirar" (no desaparece como el toast).
+async function avisoRetiro() {
+  if (currentUser.role !== 'docente') return '';
+  const mios = await Api.getPedidosPorUsuario(currentUser.username);
+  const listos = mios.filter(p => p.estado === 'aceptado');
+  if (!listos.length) return '';
+  return `
+    <div class="aviso-retiro">
+      <div class="aviso-retiro-title">📦 Tenés equipos listos para retirar</div>
+      ${listos.map(p => `<div class="aviso-retiro-item">${escapeHtml(p.equiposNombres.join(', '))} — Aula ${escapeHtml(p.aula)}</div>`).join('')}
+    </div>`;
 }
 
 // Agrupa los equipos: notebooks por carro (ordenadas por número), tableros aparte.
@@ -168,6 +191,7 @@ const PANELS = {
     const equipos = await Api.getEquipos();
     const s = stats(equipos);
     const { carroKeys, carros, tableros } = agruparPorCarro(equipos);
+    const aviso = await avisoRetiro();
 
     const cardHtml = e => `
       <div class="ecard">
@@ -180,6 +204,7 @@ const PANELS = {
     el.innerHTML = `
       <div class="stitle">Disponibilidad de Equipos</div>
       <div class="ssub">Estado actual de todos los equipos en tiempo real.</div>
+      ${aviso}
       <div class="stats">
         <div class="sc"><div class="num">${s.total}</div><div class="lbl">Total</div></div>
         <div class="sc"><div class="num">${s.disp}</div><div class="lbl">Disponibles</div></div>
@@ -273,7 +298,8 @@ const PANELS = {
 
   async historial(el) {
     const mios = (await Api.getPedidosPorUsuario(currentUser.username)).slice().reverse();
-    el.innerHTML = `<div class="stitle">Mis Pedidos</div><div class="ssub">Historial de tus solicitudes y su estado.</div>`;
+    const aviso = await avisoRetiro();
+    el.innerHTML = `<div class="stitle">Mis Pedidos</div><div class="ssub">Historial de tus solicitudes y su estado.</div>${aviso}`;
     if (!mios.length) {
       el.innerHTML += `<div class="empty"><div class="ei">📭</div><p>Todavía no hiciste ningún pedido.</p></div>`;
       return;
@@ -464,7 +490,7 @@ async function agregarEquipo() {
 async function accionPedido(id, accion) {
   try {
     await Api.accionPedido(id, accion);
-    const msgs = { aceptar: '✅ Pedido aceptado.', entregar: '📦 Marcado como entregado.', rechazar: '❌ Pedido rechazado. Equipos liberados.' };
+    const msgs = { aceptar: '📦 Pedido listo para retirar.', entregar: '📦 Marcado como entregado.', rechazar: '❌ Pedido rechazado. Equipos liberados.' };
     toast(msgs[accion] || 'Actualizado.');
     const tw = document.querySelector('.tw');
     if (tw) await renderPedidos(tw);
@@ -491,7 +517,7 @@ async function renderPedidos(tw) {
         <td style="white-space:nowrap">${fmt(p.fecha)}</td>
         <td>${bped(p.estado)}</td>
         <td>
-          ${p.estado === 'pendiente' ? `<div class="ba2"><button class="bacc" onclick="accionPedido(${p.id},'aceptar')">Aceptar</button><button class="brej" onclick="accionPedido(${p.id},'rechazar')">Rechazar</button></div>` : ''}
+          ${p.estado === 'pendiente' ? `<div class="ba2"><button class="bacc" onclick="accionPedido(${p.id},'aceptar')">Listo para retirar</button><button class="brej" onclick="accionPedido(${p.id},'rechazar')">Rechazar</button></div>` : ''}
           ${p.estado === 'aceptado' ? `<div class="ba2"><button class="bdel" onclick="accionPedido(${p.id},'entregar')">Marcar entregado</button><button class="brej" onclick="accionPedido(${p.id},'rechazar')">Cancelar</button></div>` : ''}
           ${p.estado === 'entregado' || p.estado === 'rechazado' ? '<span style="color:var(--gray);font-size:12px">—</span>' : ''}
         </td>
