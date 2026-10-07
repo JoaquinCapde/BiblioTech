@@ -137,6 +137,11 @@ tbody td{padding:14px 20px;font-size:14px;color:var(--navy);vertical-align:top}
 .carro-box[open] summary{border-bottom:1px solid #eef0f3}
 .carro-box .esel{padding:16px 20px}
 
+/* ---------- Aviso "listo para retirar" ---------- */
+.aviso-retiro{background:#fdf8ee;border:1.5px solid var(--gold);border-radius:2px;padding:18px 22px;margin-bottom:28px}
+.aviso-retiro-title{font-family:'Playfair Display',serif;font-size:16px;color:var(--navy);margin-bottom:8px}
+.aviso-retiro-item{font-size:13px;color:var(--navy2);padding:4px 0}
+
 @media(max-width:768px){
   header{padding:0 16px;flex-wrap:wrap;height:auto;gap:8px;padding-block:12px}
   nav{flex-wrap:wrap;gap:2px}
