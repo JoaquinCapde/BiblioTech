@@ -51,10 +51,7 @@ async function doLogin() {
   try {
     const user = await api.login(u, p);
     err.style.display = "none";
-    currentUser = user;
-    q("login-screen").style.display = "none";
-    q("app").style.display = "flex";
-    await applyRole();
+    await entrarApp(user);
   } catch (e) {
     err.textContent = e.message;
     err.style.display = "block";
@@ -64,12 +61,81 @@ async function doLogin() {
   }
 }
 
+async function entrarApp(user) {
+  currentUser = user;
+  q("login-screen").style.display = "none";
+  q("app").style.display = "flex";
+  await applyRole();
+}
+
+/* registro */
+
+function mostrarRegistro() {
+  q("form-login").classList.add("hidden");
+  q("form-registro").classList.remove("hidden");
+  q("lerr").style.display = "none";
+}
+
+function mostrarLogin() {
+  q("form-registro").classList.add("hidden");
+  q("form-login").classList.remove("hidden");
+  q("rerr").style.display = "none";
+}
+
+async function doRegistro() {
+  const nombre = q("reg-nombre").value.trim();
+  const usuario = q("reg-user").value.trim().toLowerCase();
+  const pass = q("reg-pass").value;
+  const pass2 = q("reg-pass2").value;
+  const err = q("rerr");
+  const btn = q("btn-registro");
+
+  const mostrarError = (msg) => {
+    err.textContent = msg;
+    err.style.display = "block";
+  };
+
+  if (!nombre || !usuario || !pass || !pass2) {
+    mostrarError("Completá todos los campos.");
+    return;
+  }
+  if (pass.length < 6) {
+    mostrarError("La contraseña tiene que tener al menos 6 caracteres.");
+    return;
+  }
+  if (pass !== pass2) {
+    mostrarError("Las contraseñas no coinciden.");
+    return;
+  }
+
+  btn.disabled = true;
+  btn.textContent = "Creando cuenta...";
+
+  try {
+    const user = await api.registrar(nombre, usuario, pass);
+    err.style.display = "none";
+    await entrarApp(user);
+    toast(`Cuenta creada. ¡Bienvenido/a, ${user.name.split(" ")[0]}!`);
+  } catch (e) {
+    mostrarError(e.message);
+  } finally {
+    btn.disabled = false;
+    btn.textContent = "Crear cuenta";
+  }
+}
+
+function limpiarFormularios() {
+  ["inp-u", "inp-p", "reg-nombre", "reg-user", "reg-pass", "reg-pass2"].forEach((id) => {
+    q(id).value = "";
+  });
+  mostrarLogin();
+}
+
 function doLogout() {
   currentUser = null;
   q("login-screen").style.display = "flex";
   q("app").style.display = "none";
-  q("inp-p").value = "";
-  q("inp-u").value = "";
+  limpiarFormularios();
 }
 
 async function applyRole() {
@@ -624,16 +690,25 @@ async function renderReportes(tw) {
 
 function init() {
   q("btn-login").addEventListener("click", doLogin);
+  q("btn-registro").addEventListener("click", doRegistro);
   q("btn-logout").addEventListener("click", doLogout);
-  q("inp-p").addEventListener("keydown", (e) => {
-    if (e.key === "Enter") {
-      doLogin();
-    }
+  q("ir-registro").addEventListener("click", mostrarRegistro);
+  q("ir-login").addEventListener("click", mostrarLogin);
+
+  ["inp-u", "inp-p"].forEach((id) => {
+    q(id).addEventListener("keydown", (e) => {
+      if (e.key === "Enter") {
+        doLogin();
+      }
+    });
   });
-  q("inp-u").addEventListener("keydown", (e) => {
-    if (e.key === "Enter") {
-      doLogin();
-    }
+
+  ["reg-nombre", "reg-user", "reg-pass", "reg-pass2"].forEach((id) => {
+    q(id).addEventListener("keydown", (e) => {
+      if (e.key === "Enter") {
+        doRegistro();
+      }
+    });
   });
 }
 
