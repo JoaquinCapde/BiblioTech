@@ -18,15 +18,28 @@
         <p>Gestión de préstamos de equipos tecnológicos del colegio.</p>
       </div>
       <div class="lb">
-        <label for="inp-u">Usuario</label>
-        <input id="inp-u" type="text" placeholder="Ingresá tu usuario" autocomplete="username" />
-        <label for="inp-p">Contraseña</label>
-        <input id="inp-p" type="password" placeholder="••••••••" autocomplete="current-password" />
-        <p id="lerr">Usuario o contraseña incorrectos.</p>
-        <button class="btn-login" id="btn-login">Ingresar al sistema</button>
-        <div class="hint">
-          <b>Docente:</b> docente / 1234<br>
-          <b>Bibliotecario:</b> biblio / 1234
+        <div id="form-login">
+          <label for="inp-u">Usuario</label>
+          <input id="inp-u" type="text" placeholder="Ingresá tu usuario" autocomplete="username" />
+          <label for="inp-p">Contraseña</label>
+          <input id="inp-p" type="password" placeholder="••••••••" autocomplete="current-password" />
+          <p id="lerr">Usuario o contraseña incorrectos.</p>
+          <button class="btn-login" id="btn-login">Ingresar al sistema</button>
+          <p class="switch-row">¿No tenés cuenta? <button class="link-btn" id="ir-registro">Registrate</button></p>
+        </div>
+
+        <div id="form-registro" class="hidden">
+          <label for="reg-nombre">Nombre y apellido</label>
+          <input id="reg-nombre" type="text" placeholder="Ej: María Pérez" autocomplete="name" />
+          <label for="reg-user">Usuario</label>
+          <input id="reg-user" type="text" placeholder="Ej: maria.perez" autocomplete="username" />
+          <label for="reg-pass">Contraseña</label>
+          <input id="reg-pass" type="password" placeholder="Mínimo 6 caracteres" autocomplete="new-password" />
+          <label for="reg-pass2">Repetir contraseña</label>
+          <input id="reg-pass2" type="password" placeholder="••••••••" autocomplete="new-password" />
+          <p id="rerr"></p>
+          <button class="btn-login" id="btn-registro">Crear cuenta</button>
+          <p class="switch-row">¿Ya tenés cuenta? <button class="link-btn" id="ir-login">Ingresá</button></p>
         </div>
       </div>
     </div>
