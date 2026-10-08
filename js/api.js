@@ -52,6 +52,10 @@ const api = {
     return invoke("login", { usuario, password });
   },
 
+  async registrar(nombre, usuario, password) {
+    return invoke("registro", { nombre, usuario, password });
+  },
+
   async getEquipos() {
     const { data, error } = await sb.from("equipos").select("*").order("id");
     if (error) {
