@@ -1,52 +1,52 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-  <meta charset="UTF-8"/>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Bibliotech - Gestión de Equipos</title>
-  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700&family=Source+Sans+3:wght@300;400;500;600&display=swap" rel="stylesheet"/>
-  <link rel="stylesheet" href="css/style.css"/>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Bibliotech</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@600;700;800&family=Inter:wght@400;500;600&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="css/style.css" />
 </head>
 <body>
 
-<div id="login-screen">
-  <div class="login-card">
-    <div class="lh">
-      <div class="badge">Sistema Escolar</div>
-      <h1>Bibliotech</h1>
-      <p>Gestión de préstamos de equipos tecnológicos</p>
-    </div>
-    <div class="lb">
-      <label for="inp-u">Usuario</label>
-      <input id="inp-u" type="text" placeholder="Ingresá tu usuario" autocomplete="username"/>
-      <label for="inp-p">Contraseña</label>
-      <input id="inp-p" type="password" placeholder="••••••••" autocomplete="current-password"/>
-      <div id="lerr">❌ Usuario o contraseña incorrectos.</div>
-      <button class="btn-login" id="btn-login">Ingresar al sistema</button>
-      <div class="hint">
-        <b>Docente:</b> docente / 1234<br>
-        <b>Bibliotecario:</b> biblio / 1234
+  <div id="login-screen">
+    <div class="login-card">
+      <div class="lh">
+        <span class="badge">B</span>
+        <h1 class="brand-font">Bibliotech</h1>
+        <p>Gestión de préstamos de equipos tecnológicos del colegio.</p>
+      </div>
+      <div class="lb">
+        <label for="inp-u">Usuario</label>
+        <input id="inp-u" type="text" placeholder="Ingresá tu usuario" autocomplete="username" />
+        <label for="inp-p">Contraseña</label>
+        <input id="inp-p" type="password" placeholder="••••••••" autocomplete="current-password" />
+        <p id="lerr">Usuario o contraseña incorrectos.</p>
+        <button class="btn-login" id="btn-login">Ingresar al sistema</button>
+        <div class="hint">
+          <b>Docente:</b> docente / 1234<br>
+          <b>Bibliotecario:</b> biblio / 1234
+        </div>
       </div>
     </div>
   </div>
-</div>
 
-<div id="app">
-  <header>
-    <div class="logo">Biblio<span>tech</span></div>
-    <nav id="nav"></nav>
-    <div class="hr">
-      <div class="utag">Rol: <b id="ulbl"></b></div>
-      <button class="btn-logout" id="btn-logout">Salir</button>
-    </div>
-  </header>
-  <main id="mc"></main>
-</div>
-<div id="toast"></div>
+  <div id="app">
+    <header>
+      <div class="logo">Biblio<span>tech</span></div>
+      <nav id="nav"></nav>
+      <div class="hr">
+        <div class="utag">Rol <b id="ulbl"></b></div>
+        <button class="btn-logout" id="btn-logout">Salir</button>
+      </div>
+    </header>
+    <main id="mc"></main>
+  </div>
+  <div id="toast"></div>
 
-<!-- Cliente de Supabase (reemplaza al fetch directo contra un backend propio) -->
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
-<script src="js/api.js"></script>
-<script src="js/app.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+  <script src="js/api.js"></script>
+  <script src="js/app.js"></script>
 </body>
 </html>
